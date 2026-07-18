@@ -1,21 +1,87 @@
 <!doctype html>
 <html>
+<head>
+<meta charset="utf-8">
+<title>Flag41 Debug</title>
+<style>
+body {
+    font-family: monospace;
+    white-space: pre-wrap;
+}
+</style>
+</head>
 <body>
-<h3>Flag41 exploit</h3>
+
+<h2>Flag41 Debug</h2>
+
+<div id="log"></div>
+
 <script>
-window.addEventListener("message", function (event) {
-  if (!event.ports || event.ports.length === 0) return;
-  const port = event.ports[0];
-  port.onmessage = function(e) {
-    console.log("[app->web]", e.data);
-  };
-   
-  port.postMessage(JSON.stringify({ message: "init_complete" }));
- 
-  setTimeout(() => {
-    port.postMessage(JSON.stringify({ message: "success" }));
-  }, 1000);
+
+function log(msg) {
+    console.log(msg);
+    document.getElementById("log").innerHTML += msg + "<br>";
+}
+
+log("Page loaded");
+
+window.addEventListener("message", function(event) {
+
+    log("window message received");
+    log("origin = " + event.origin);
+
+    if (!event.ports || event.ports.length === 0) {
+        log("No MessagePort!");
+        return;
+    }
+
+    log("MessagePort received");
+
+    const port = event.ports[0];
+
+    port.onmessage = function(e) {
+
+        log("FROM APP:");
+        log(e.data);
+
+        try {
+
+            log("Sending init_complete");
+
+            port.postMessage(JSON.stringify({
+                message: "init_complete"
+            }));
+
+            log("Sending get_solved_count");
+
+            port.postMessage(JSON.stringify({
+                message: "get_solved_count"
+            }));
+
+            log("Sending get_solved_flags");
+
+            port.postMessage(JSON.stringify({
+                message: "get_solved_flags"
+            }));
+
+            setTimeout(function(){
+
+                log("Sending success");
+
+                port.postMessage(JSON.stringify({
+                    message: "success"
+                }));
+
+            },1000);
+
+        } catch(err) {
+            log(err.toString());
+        }
+    };
+
 });
+
 </script>
+
 </body>
 </html>
